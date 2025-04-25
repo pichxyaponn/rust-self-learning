@@ -1,163 +1,185 @@
+const MAX_HEALTH: u8 = 100;
 fn main() {
     let mut warrior = Warrior::new();
     let mut mage = Mage::new();
     let mut healer = Healer::new();
-
-    warrior.health_decrease(20);
-    mage.health_decrease(20);
-    healer.health_decrease(20);
+    println!("Warrior Health: {}", warrior.health());
+    println!("Mage Health: {}", mage.health());
+    println!("Healer Health: {}", healer.health());
+    println!("---");
 
     warrior.attack();
     mage.attack();
+    println!("---");
 
-    healer.health_increase(5);
+    mage.take_damage(30);
+    healer.take_damage(15);
+    println!("---");
+
+    healer.heal(20);
+    println!("---");
 
     println!("Show Warrior Health: {}", warrior.health());
     println!("Show Mage Health: {}", mage.health());
     println!("Show Healer Health: {}", healer.health());
+    println!("---");
+
+    warrior.take_damage(150);
 }
 
 trait Weapon {
-    fn attack(&self);
+    fn use_weapon(&self);
 }
 
 struct Sword;
 impl Weapon for Sword {
-    fn attack(&self) {
+    fn use_weapon(&self) {
         println!("Sword attack: Slash!")
     }
 }
 struct Staff;
 impl Weapon for Staff {
-    fn attack(&self) {
+    fn use_weapon(&self) {
         println!("Staff attack: Zap!")
     }
 }
-
-trait Character {
-    fn job(&self) -> &'static str;
-    fn health(&self) -> u8;
-    fn health_increase(&mut self, heal: u8);
-    fn health_decrease(&mut self, damage: u8);
-    fn attack(&self);
+struct Wand;
+impl Weapon for Wand {
+    fn use_weapon(&self) {
+        println!("Wand heal: Wink!")
+    }
 }
 
-struct Warrior {
+struct Character {
     health: u8,
     strength: u8,
     intelligence: u8,
     weapon: Box<dyn Weapon>,
+}
+
+impl Character {
+    fn new(health: u8, strength: u8, intelligence: u8, weapon: Box<dyn Weapon>) -> Self {
+        Self {
+            health,
+            strength,
+            intelligence,
+            weapon,
+        }
+    }
+
+    fn health(&self) -> u8 {
+        self.health
+    }
+
+    fn health_increase(&mut self, heal: u8) {
+        self.health = self
+            .health
+            .checked_add(heal)
+            .unwrap_or(MAX_HEALTH)
+            .min(MAX_HEALTH);
+    }
+
+    fn health_decrease(&mut self, damage: u8) {
+        self.health = self.health.saturating_sub(damage);
+    }
+
+    fn use_weapon(&self) {
+        self.weapon.use_weapon();
+    }
+}
+
+struct Warrior {
+    character: Character,
 }
 
 impl Warrior {
     fn new() -> Self {
         Self {
-            health: 100,
-            strength: 90,
-            intelligence: 25,
-            weapon: Box::new(Sword),
+            character: Character::new(MAX_HEALTH, 90, 25, Box::new(Sword)),
         }
-    }
-}
-
-impl Character for Warrior {
-    fn job(&self) -> &'static str {
-        "Warrior"
     }
 
     fn health(&self) -> u8 {
-        self.health
+        self.character.health()
     }
 
-    fn health_increase(&mut self, heal: u8) {
-        self.health = self.health.checked_add(heal).unwrap_or(100).min(100);
-    }
-
-    fn health_decrease(&mut self, damage: u8) {
-        self.health = self.health.saturating_sub(damage);
+    fn take_damage(&mut self, damage: u8) {
+        self.character.health_decrease(damage);
+        println!(
+            "Warrior takes {} damage. Current health: {}",
+            damage,
+            self.health()
+        );
     }
 
     fn attack(&self) {
-        self.weapon.attack();
+        println!("Warrior prepares to attack...");
+        self.character.use_weapon();
     }
 }
 
 struct Mage {
-    health: u8,
-    strength: u8,
-    intelligence: u8,
-    weapon: Box<dyn Weapon>,
+    character: Character,
 }
 
 impl Mage {
     fn new() -> Self {
         Self {
-            health: 100,
-            strength: 35,
-            intelligence: 70,
-            weapon: Box::new(Staff),
+            character: Character::new(MAX_HEALTH, 35, 70, Box::new(Staff)),
         }
-    }
-}
-
-impl Character for Mage {
-    fn job(&self) -> &'static str {
-        "Mage"
     }
 
     fn health(&self) -> u8 {
-        self.health
+        self.character.health()
     }
 
-    fn health_increase(&mut self, heal: u8) {
-        self.health = self.health.checked_add(heal).unwrap_or(100).min(100);
-    }
-
-    fn health_decrease(&mut self, damage: u8) {
-        self.health = self.health.saturating_sub(damage);
+    fn take_damage(&mut self, damage: u8) {
+        self.character.health_decrease(damage);
+        println!(
+            "Mage takes {} damage. Current health: {}",
+            damage,
+            self.health()
+        );
     }
 
     fn attack(&self) {
-        self.weapon.attack();
+        println!("Mage gathers magical energy...");
+        self.character.use_weapon();
     }
 }
 
 struct Healer {
-    health: u8,
-    strength: u8,
-    intelligence: u8,
-    weapon: Box<dyn Weapon>,
+    character: Character,
 }
 
 impl Healer {
     fn new() -> Self {
         Self {
-            health: 100,
-            strength: 20,
-            intelligence: 90,
-            weapon: Box::new(Staff),
+            character: Character::new(MAX_HEALTH, 20, 90, Box::new(Wand)),
         }
-    }
-}
-
-impl Character for Healer {
-    fn job(&self) -> &'static str {
-        "Healer"
     }
 
     fn health(&self) -> u8 {
-        self.health
+        self.character.health()
     }
 
-    fn health_increase(&mut self, heal: u8) {
-        self.health = self.health.checked_add(heal).unwrap_or(100).min(100);
+    fn take_damage(&mut self, damage: u8) {
+        self.character.health_decrease(damage);
+        println!(
+            "Healer takes {} damage. Current health: {}",
+            damage,
+            self.health()
+        );
     }
 
-    fn health_decrease(&mut self, damage: u8) {
-        self.health = self.health.saturating_sub(damage);
-    }
-
-    fn attack(&self) {
-        self.weapon.attack();
+    fn heal(&mut self, heal: u8) {
+        println!("Healer channels healing energy...");
+        self.character.health_increase(heal);
+        self.character.use_weapon();
+        println!(
+            "Healer healed for {}. Current health: {}",
+            heal,
+            self.health()
+        );
     }
 }
